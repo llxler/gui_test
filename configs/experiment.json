@@ -1,0 +1,19 @@
+{
+  "models": ["qwen/qwen3-coder-30b-a3b-instruct", "deepseek/deepseek-v3.2"],
+  "library_model": "deepseek/deepseek-v3.2",
+  "methods": ["direct", "retrieval", "dna", "constrained"],
+  "repetitions": 2,
+  "temperature": 0.6,
+  "max_tokens": 6000,
+  "library_max_tokens": 10000,
+  "max_repairs": 2,
+  "workers": 4,
+  "budget_usd": 10.0,
+  "stop_new_requests_usd": 9.0,
+  "price_caps_per_million": {"prompt": 2.0, "completion": 4.0},
+  "provider_order": {
+    "qwen/qwen3-coder-30b-a3b-instruct": ["alibaba"],
+    "deepseek/deepseek-v3.2": ["deepinfra"]
+  },
+  "seed": 20261004
+}

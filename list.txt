@@ -1,0 +1,7 @@
+WebDevJudge: Evaluating (M)LLMs as Critiques for Web Development Quality, 2026.3.3, ICLR 2026, Tencent AI Lab
+可以看看这个，有包含交互的评估的
+WebGen-Bench: Evaluating LLMs on Generating Interactive and Functional Websites from Scratch, 2025.8.11, NeurIPS 2025(oral),  MMLab、港中文
+WebGen-R1: Incentivizing Large Language Models to Generate Functional and Aesthetic Websites with Reinforcement Learning, 2026.4.22,  
+HKUST 
+AppForge: From Assistant to Independent Developer -- Are GPTs Ready for Software Development?, 2025.10.9,  PKU
+还可以看看这几篇

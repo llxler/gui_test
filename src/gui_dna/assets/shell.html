@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'">
+<title>Fieldnotes · List workspace</title>
+<style>
+:root { font: 16px/1.5 system-ui,sans-serif; color:#172f2d; background:#f0f3ed; }
+* { box-sizing:border-box; } [hidden] { display:none !important; } body { margin:0; } main { max-width:1060px; margin:48px auto; padding:0 28px; }
+header { display:flex; align-items:center; justify-content:space-between; margin-bottom:30px; }
+.eyebrow { font-size:12px; letter-spacing:.17em; text-transform:uppercase; color:#597269; } h1 { margin:4px 0; font-size:36px; letter-spacing:-.04em; }
+.badge { background:#d9e8d9; border-radius:24px; padding:8px 16px; font-size:13px; } .panel { background:#fff; border:1px solid #d9e0d7; border-radius:16px; padding:24px; box-shadow:0 6px 24px #18372e06; }
+.toolbar { display:flex; gap:16px; align-items:end; flex-wrap:wrap; margin-bottom:24px; } label { display:grid; gap:6px; font-size:12px; color:#587067; }
+input,select,button { font:inherit; border:1px solid #cdd8ce; border-radius:7px; padding:9px 12px; color:#203c32; background:white; }
+input:focus,select:focus { outline:2px solid #70a895; outline-offset:2px; } button { cursor:pointer; } button:hover { background:#edf4ed; } button:disabled { opacity:.4; cursor:default; }
+.primary { background:#245b47; color:white; border-color:#245b47; } .primary:hover { background:#164e39; } .danger { color:#aa4437; }
+table { width:100%; border-collapse:collapse; text-align:left; } th { font-size:12px; color:#74847b; font-weight:500; } td,th { padding:15px 10px; border-bottom:1px solid #e5eae4; } td:first-child { font-weight:600; } td button { margin-left:6px; padding:5px 10px; font-size:13px; }
+.category { font-size:12px; background:#edf2e8; padding:4px 10px; border-radius:16px; } footer { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:22px; font-size:13px; color:#66796e; }
+#pager { display:flex; gap:8px; align-items:center; } #page { width:65px; } #editor { border-top:1px solid #dae4d9; margin-top:24px; padding-top:20px; } #editor .toolbar { margin-top:12px; } #empty { text-align:center; color:#7a8b80; padding:40px; } #error { color:#a52f2f; white-space:pre-wrap; }
+@media(max-width:650px) { main { margin:24px auto; padding:0 12px; } .panel { padding:14px; } footer { flex-wrap:wrap; } td,th { padding:10px 5px; } h1 { font-size:28px; } }
+</style></head><body><main>
+<header><div><div class="eyebrow">Fieldnotes / Workspace</div><h1>Your list, in order.</h1></div><span class="badge">Local workspace</span></header>
+<section class="panel"><div class="toolbar">
+<label data-feature="search">Search names<input id="search" placeholder="Find an item…" aria-label="Search names"></label>
+<label data-feature="filter">Category<select id="filter"><option value="all">All categories</option><option>A</option><option>B</option><option>C</option></select></label>
+<label data-feature="sort">Sort by<select id="sort"><option value="none">Original order</option><option value="name-asc">Name A–Z</option><option value="score-desc">Highest score</option></select></label>
+<button data-feature="undo" id="undo">Undo deletion</button>
+</div><table><thead><tr><th>Name</th><th>Category</th><th>Score</th><th>Actions</th></tr></thead><tbody id="rows"></tbody></table>
+<div id="empty" hidden>No matching items</div><footer><span id="total"></span><div id="pager" data-feature="pagination"><button id="prev" aria-label="Previous page">←</button><label>Page<input id="page" type="number" min="1"></label><span id="pages"></span><button id="go">Go</button><button id="next" aria-label="Next page">→</button></div></footer>
+<form id="editor" hidden><strong>Edit item</strong><div class="toolbar"><label>Name<input id="edit-name" required></label><label>Category<select id="edit-category"><option>A</option><option>B</option><option>C</option></select></label><label>Score<input id="edit-score" type="number" required></label><button id="save" class="primary" type="submit">Save changes</button><button id="cancel" type="button">Cancel</button></div></form>
+<pre id="error" role="alert"></pre></section></main>
+<script>/*__CANDIDATE__*/</script>
+<script>
+(() => {
+  const initial = /*__INITIAL__*/;
+  let state, view, trace = [], errors = [];
+  const $ = id => document.getElementById(id);
+  const clone = x => structuredClone(x);
+  function render() {
+    view = window.candidate.select(clone(state));
+    for (const element of document.querySelectorAll('[data-feature]')) element.hidden = !state.enabled.includes(element.dataset.feature);
+    $('search').value=state.query; $('filter').value=state.filter; $('sort').value=state.sort;
+    $('page').value=state.page; $('pages').textContent=`of ${view.pages}`;
+    $('total').textContent=`${view.total} items`; $('empty').hidden=view.items.length>0;
+    $('prev').disabled=state.page<=1; $('next').disabled=state.page>=view.pages; $('undo').disabled=state.history.length===0;
+    $('rows').replaceChildren();
+    for (const item of view.items) {
+      const row=document.createElement('tr'); row.dataset.id=item.id;
+      for (const key of ['name','category','score']) { const cell=document.createElement('td'); cell.dataset.field=key; cell.textContent=item[key]; row.append(cell); }
+      const actions=document.createElement('td');
+      for (const type of ['edit','delete']) if (state.enabled.includes(type)) {
+        const button=document.createElement('button'); button.textContent=type==='edit'?'Edit':'Delete'; button.dataset.action=type;
+        if(type==='delete') button.className='danger'; button.onclick=()=>dispatch({type,id:item.id}); actions.append(button);
+      }
+      row.append(actions); $('rows').append(row);
+    }
+    $('editor').hidden=!state.editing;
+    if(state.editing) for(const key of ['name','category','score']) $('edit-'+key).value=state.editing[key];
+  }
+  function fail(error) { errors.push(String(error)); $('error').textContent=errors.join('\n'); }
+  function dispatch(event) {
+    const before=clone(state), beforeView=clone(view);
+    try { state=window.candidate.reduce(clone(state),clone(event)); render(); trace.push({before,event:clone(event),after:clone(state),beforeView,afterView:clone(view)}); }
+    catch(error) { fail(error); }
+  }
+  function reset(value) { state=clone(value||initial); trace=[]; errors=[]; $('error').textContent=''; try{render();}catch(error){fail(error);} }
+  $('search').oninput=e=>dispatch({type:'search',value:e.target.value});
+  for(const type of ['filter','sort']) $(type).onchange=e=>dispatch({type,value:e.target.value});
+  $('prev').onclick=()=>dispatch({type:'page',value:state.page-1}); $('next').onclick=()=>dispatch({type:'page',value:state.page+1});
+  $('go').onclick=()=>dispatch({type:'page',value:Number($('page').value)}); $('undo').onclick=()=>dispatch({type:'undo'});
+  for(const field of ['name','category','score']) $('edit-'+field)[field==='category'?'onchange':'oninput']=e=>dispatch({type:'draft',field,value:field==='score'?Number(e.target.value):e.target.value});
+  $('editor').onsubmit=e=>{e.preventDefault();dispatch({type:'save'});}; $('cancel').onclick=()=>dispatch({type:'cancel'});
+  window.__gui={reset,dispatch,snapshot:(compact=false)=>clone({state,view,trace:compact?trace.slice(-1):trace,errors})};
+  reset();
+})();
+</script></body></html>

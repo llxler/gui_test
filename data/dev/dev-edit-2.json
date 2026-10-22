@@ -1,0 +1,64 @@
+{
+  "id": "dev-edit-2",
+  "requirement": "Build a local single-page list manager. Edit a copy of the selected item. Draft changes never mutate items. Cancel discards the draft. Save replaces that item by stable id, then recomputes filtering/sorting/pagination; only name/category/score are editable.",
+  "features": [
+    "edit"
+  ],
+  "initial": {
+    "items": [
+      {
+        "id": 21,
+        "name": "Alpha sample",
+        "category": "A",
+        "score": 7
+      },
+      {
+        "id": 22,
+        "name": "Beta sample",
+        "category": "B",
+        "score": 3
+      },
+      {
+        "id": 23,
+        "name": "Almond sample",
+        "category": "C",
+        "score": 7
+      },
+      {
+        "id": 24,
+        "name": "Delta sample",
+        "category": "A",
+        "score": 1
+      },
+      {
+        "id": 25,
+        "name": "Atlas sample",
+        "category": "B",
+        "score": 9
+      },
+      {
+        "id": 26,
+        "name": "Berry sample",
+        "category": "C",
+        "score": 5
+      },
+      {
+        "id": 27,
+        "name": "Aloe sample",
+        "category": "A",
+        "score": 2
+      }
+    ],
+    "enabled": [
+      "edit"
+    ],
+    "query": "",
+    "filter": "all",
+    "sort": "none",
+    "page": 1,
+    "pageSize": 3,
+    "editing": null,
+    "history": []
+  },
+  "code": "function deriveView(s) {\n  let items = s.items.filter(x => x.name.toLowerCase().includes(s.query.trim().toLowerCase()) && (s.filter === 'all' || x.category === s.filter));\n  if (s.sort === 'name-asc') items.sort((a,b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : a.name.toLowerCase() > b.name.toLowerCase() ? 1 : 0);\n  if (s.sort === 'score-desc') items.sort((a,b) => b.score - a.score);\n  const total = items.length;\n  const pages = s.enabled.includes('pagination') ? Math.max(1, Math.ceil(total / s.pageSize)) : 1;\n  if (s.enabled.includes('pagination')) items = items.slice((s.page-1)*s.pageSize, s.page*s.pageSize);\n  return {items, total, pages};\n}\nfunction edit(s,e) {\n  if (e.type === 'edit') s.editing = structuredClone(s.items.find(x => x.id === e.id) ?? null);\n  if (e.type === 'draft' && s.editing) s.editing[e.field] = e.value;\n  if (e.type === 'cancel') s.editing = null;\n  if (e.type === 'save' && s.editing) {\n    s.items = s.items.map(x => x.id === s.editing.id ? {...s.editing} : x);\n    s.editing = null;\n  }\n}\nwindow.candidate = { select: deriveView, reduce(s,e) { switch(e.type) {case \"edit\": edit(s,e); break;\ncase \"draft\": edit(s,e); break;\ncase \"save\": edit(s,e); break;\ncase \"cancel\": edit(s,e); break;} s.page = Math.max(1,Math.min(s.page,deriveView(s).pages)); return s; } };\n"
+}

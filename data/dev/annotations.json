@@ -1,0 +1,124 @@
+[
+  {
+    "name": "deriveView",
+    "feature": "core",
+    "reads": [
+      "items",
+      "query",
+      "filter",
+      "sort",
+      "page",
+      "pageSize",
+      "enabled"
+    ],
+    "writes": [],
+    "requires": [],
+    "pre": "Array.isArray(before.items)",
+    "post": "after.page >= 1 && after.page <= afterView.pages && new Set(after.items.map(x=>x.id)).size === after.items.length",
+    "code": "function deriveView(s) {\n  let items = s.items.filter(x => x.name.toLowerCase().includes(s.query.trim().toLowerCase()) && (s.filter === 'all' || x.category === s.filter));\n  if (s.sort === 'name-asc') items.sort((a,b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : a.name.toLowerCase() > b.name.toLowerCase() ? 1 : 0);\n  if (s.sort === 'score-desc') items.sort((a,b) => b.score - a.score);\n  const total = items.length;\n  const pages = s.enabled.includes('pagination') ? Math.max(1, Math.ceil(total / s.pageSize)) : 1;\n  if (s.enabled.includes('pagination')) items = items.slice((s.page-1)*s.pageSize, s.page*s.pageSize);\n  return {items, total, pages};\n}"
+  },
+  {
+    "name": "search",
+    "feature": "search",
+    "reads": [],
+    "writes": [
+      "query",
+      "page"
+    ],
+    "requires": [],
+    "pre": "typeof event.value === 'string'",
+    "post": "after.query === event.value && after.page === 1 && JSON.stringify(before.items) === JSON.stringify(after.items)",
+    "code": "function search(s,e) { s.query = e.value; s.page = 1; }"
+  },
+  {
+    "name": "filter",
+    "feature": "filter",
+    "reads": [],
+    "writes": [
+      "filter",
+      "page"
+    ],
+    "requires": [],
+    "pre": "['all','A','B','C'].includes(event.value)",
+    "post": "after.filter === event.value && after.page === 1 && JSON.stringify(before.items) === JSON.stringify(after.items)",
+    "code": "function filter(s,e) { s.filter = e.value; s.page = 1; }"
+  },
+  {
+    "name": "sort",
+    "feature": "sort",
+    "reads": [],
+    "writes": [
+      "sort",
+      "page"
+    ],
+    "requires": [],
+    "pre": "['none','name-asc','score-desc'].includes(event.value)",
+    "post": "after.sort === event.value && after.page === 1 && JSON.stringify(before.items) === JSON.stringify(after.items)",
+    "code": "function sort(s,e) { s.sort = e.value; s.page = 1; }"
+  },
+  {
+    "name": "pagination",
+    "feature": "pagination",
+    "reads": [
+      "page"
+    ],
+    "writes": [
+      "page"
+    ],
+    "requires": [
+      "deriveView"
+    ],
+    "pre": "Number.isFinite(event.value)",
+    "post": "after.page >= 1 && after.page <= afterView.pages",
+    "code": "function pagination(s,e) { s.page = Math.max(1, Math.trunc(e.value)); }"
+  },
+  {
+    "name": "edit",
+    "feature": "edit",
+    "reads": [
+      "items",
+      "editing"
+    ],
+    "writes": [
+      "editing",
+      "items"
+    ],
+    "requires": [],
+    "pre": "Array.isArray(before.items)",
+    "post": "event.type === 'save' || JSON.stringify(before.items) === JSON.stringify(after.items)",
+    "code": "function edit(s,e) {\n  if (e.type === 'edit') s.editing = structuredClone(s.items.find(x => x.id === e.id) ?? null);\n  if (e.type === 'draft' && s.editing) s.editing[e.field] = e.value;\n  if (e.type === 'cancel') s.editing = null;\n  if (e.type === 'save' && s.editing) {\n    s.items = s.items.map(x => x.id === s.editing.id ? {...s.editing} : x);\n    s.editing = null;\n  }\n}"
+  },
+  {
+    "name": "removeItem",
+    "feature": "delete",
+    "reads": [
+      "items",
+      "editing"
+    ],
+    "writes": [
+      "items",
+      "history",
+      "editing"
+    ],
+    "requires": [],
+    "pre": "before.items.some(x=>x.id===event.id)",
+    "post": "!after.items.some(x=>x.id===event.id) && after.history.length === before.history.length + 1",
+    "code": "function removeItem(s,e) {\n  const index = s.items.findIndex(x => x.id === e.id);\n  if (index < 0) return;\n  s.history.push({item: structuredClone(s.items[index]), index});\n  s.items.splice(index,1);\n  if (s.editing?.id === e.id) s.editing = null;\n}"
+  },
+  {
+    "name": "undo",
+    "feature": "undo",
+    "reads": [
+      "history",
+      "items"
+    ],
+    "writes": [
+      "history",
+      "items"
+    ],
+    "requires": [],
+    "pre": "Array.isArray(before.history)",
+    "post": "after.history.length === Math.max(0,before.history.length-1) && after.items.length === before.items.length + (before.history.length ? 1 : 0)",
+    "code": "function undo(s,e) {\n  const entry = s.history.pop();\n  if (entry && !s.items.some(x => x.id === entry.item.id)) s.items.splice(entry.index,0,entry.item);\n}"
+  }
+]

@@ -1,0 +1,20 @@
+[project]
+name = "gui-dna"
+version = "0.1.0"
+description = "Training-free GUI composition research prototype inspired by DNA"
+requires-python = ">=3.13"
+dependencies = ["playwright>=1.55,<2", "httpx[socks]>=0.28,<1"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10"]
+
+[project.scripts]
+gui-dna = "gui_dna.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

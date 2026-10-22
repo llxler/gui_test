@@ -1,0 +1,68 @@
+{
+  "id": "dev-undo-2",
+  "requirement": "Build a local single-page list manager. Pop the most recent deletion and restore it at its recorded array index, at most once; empty undo is a no-op. Recompute the view and clamp page. Undo-only tasks start with a preloaded deletion history.",
+  "features": [
+    "undo"
+  ],
+  "initial": {
+    "items": [
+      {
+        "id": 21,
+        "name": "Alpha sample",
+        "category": "A",
+        "score": 7
+      },
+      {
+        "id": 22,
+        "name": "Beta sample",
+        "category": "B",
+        "score": 3
+      },
+      {
+        "id": 24,
+        "name": "Delta sample",
+        "category": "A",
+        "score": 1
+      },
+      {
+        "id": 25,
+        "name": "Atlas sample",
+        "category": "B",
+        "score": 9
+      },
+      {
+        "id": 26,
+        "name": "Berry sample",
+        "category": "C",
+        "score": 5
+      },
+      {
+        "id": 27,
+        "name": "Aloe sample",
+        "category": "A",
+        "score": 2
+      }
+    ],
+    "enabled": [
+      "undo"
+    ],
+    "query": "",
+    "filter": "all",
+    "sort": "none",
+    "page": 1,
+    "pageSize": 3,
+    "editing": null,
+    "history": [
+      {
+        "item": {
+          "id": 23,
+          "name": "Almond sample",
+          "category": "C",
+          "score": 7
+        },
+        "index": 2
+      }
+    ]
+  },
+  "code": "function deriveView(s) {\n  let items = s.items.filter(x => x.name.toLowerCase().includes(s.query.trim().toLowerCase()) && (s.filter === 'all' || x.category === s.filter));\n  if (s.sort === 'name-asc') items.sort((a,b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : a.name.toLowerCase() > b.name.toLowerCase() ? 1 : 0);\n  if (s.sort === 'score-desc') items.sort((a,b) => b.score - a.score);\n  const total = items.length;\n  const pages = s.enabled.includes('pagination') ? Math.max(1, Math.ceil(total / s.pageSize)) : 1;\n  if (s.enabled.includes('pagination')) items = items.slice((s.page-1)*s.pageSize, s.page*s.pageSize);\n  return {items, total, pages};\n}\nfunction undo(s,e) {\n  const entry = s.history.pop();\n  if (entry && !s.items.some(x => x.id === entry.item.id)) s.items.splice(entry.index,0,entry.item);\n}\nwindow.candidate = { select: deriveView, reduce(s,e) { switch(e.type) {case \"undo\": undo(s,e); break;} s.page = Math.max(1,Math.min(s.page,deriveView(s).pages)); return s; } };\n"
+}

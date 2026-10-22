@@ -1,0 +1,64 @@
+{
+  "id": "dev-delete-1",
+  "requirement": "Build a local single-page list manager. Delete by stable id and append {item,index} to history (original array index). Immediately recompute the view and clamp page. Close draft if its item is deleted.",
+  "features": [
+    "delete"
+  ],
+  "initial": {
+    "items": [
+      {
+        "id": 1,
+        "name": "Alpha",
+        "category": "A",
+        "score": 7
+      },
+      {
+        "id": 2,
+        "name": "Beta",
+        "category": "B",
+        "score": 3
+      },
+      {
+        "id": 3,
+        "name": "Almond",
+        "category": "C",
+        "score": 7
+      },
+      {
+        "id": 4,
+        "name": "Delta",
+        "category": "A",
+        "score": 1
+      },
+      {
+        "id": 5,
+        "name": "Atlas",
+        "category": "B",
+        "score": 9
+      },
+      {
+        "id": 6,
+        "name": "Berry",
+        "category": "C",
+        "score": 5
+      },
+      {
+        "id": 7,
+        "name": "Aloe",
+        "category": "A",
+        "score": 2
+      }
+    ],
+    "enabled": [
+      "delete"
+    ],
+    "query": "",
+    "filter": "all",
+    "sort": "none",
+    "page": 1,
+    "pageSize": 3,
+    "editing": null,
+    "history": []
+  },
+  "code": "function deriveView(s) {\n  let items = s.items.filter(x => x.name.toLowerCase().includes(s.query.trim().toLowerCase()) && (s.filter === 'all' || x.category === s.filter));\n  if (s.sort === 'name-asc') items.sort((a,b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : a.name.toLowerCase() > b.name.toLowerCase() ? 1 : 0);\n  if (s.sort === 'score-desc') items.sort((a,b) => b.score - a.score);\n  const total = items.length;\n  const pages = s.enabled.includes('pagination') ? Math.max(1, Math.ceil(total / s.pageSize)) : 1;\n  if (s.enabled.includes('pagination')) items = items.slice((s.page-1)*s.pageSize, s.page*s.pageSize);\n  return {items, total, pages};\n}\nfunction removeItem(s,e) {\n  const index = s.items.findIndex(x => x.id === e.id);\n  if (index < 0) return;\n  s.history.push({item: structuredClone(s.items[index]), index});\n  s.items.splice(index,1);\n  if (s.editing?.id === e.id) s.editing = null;\n}\nwindow.candidate = { select: deriveView, reduce(s,e) { switch(e.type) {case \"delete\": removeItem(s,e); break;} s.page = Math.max(1,Math.min(s.page,deriveView(s).pages)); return s; } };\n"
+}
